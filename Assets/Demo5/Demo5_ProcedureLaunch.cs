@@ -16,47 +16,52 @@ public class Demo5_ProcedureLaunch : ProcedureBase
     {
         base.OnEnter(procedureOwner);
         Debug.Log("Demo5_ProcedureLanuch OnEnter");
+
         EventComponent eventComponent = GameEntry.GetComponent<EventComponent>();
         eventComponent.Subscribe(LoadDataTableSuccessEventArgs.EventId, OnLoadDataTableSuccess);
-        string dataTableName = "Assets/Demo5/Hero.txt";
-        m_LoadedFlag.Add(dataTableName, false);
-        string[] splitedNames = dataTableName.Split('_');
-        Log.Error("Length " + splitedNames.Length);
-        if (splitedNames.Length > 2)
-        {
-            Log.Warning("Data table name is invalid.");
-            return;
-        }
 
-        string dataRowClassName = "DRHero";
-        Type dataRowType = Type.GetType(dataRowClassName);
-        if (dataRowType == null)
-        {
-            Log.Warning("Can not get data row type with class name '{0}'.", dataRowClassName);
-            return;
-        }
+        DataTableComponent DataTable = GameEntry.GetComponent<DataTableComponent>();
+        Type dataRowType = Type.GetType("DRHero");
+        DataTableBase dataTableBase = DataTable.CreateDataTable(dataRowType);
+        dataTableBase.ReadData("Assets/Demo5/Hero.txt");
 
-        string name = splitedNames.Length > 1 ? splitedNames[1] : null;
-        DataTableComponent dataTableComponent = GameEntry.GetComponent<DataTableComponent>();
-        DataTableBase dataTable = dataTableComponent.CreateDataTable(dataRowType, name);
-        dataTable.ReadData(dataTableName, 100, this);
-        IDataTable<DRHero> dtHero = dataTableComponent.GetDataTable<DRHero>();
-        DRHero drHero = dtHero.GetDataRow(1);
-        if (drHero == null)
-        {
-            Log.Debug("Null");
-            return;
-        }
-        Log.Debug(drHero.Id);
     }
     private void OnLoadDataTableSuccess(object sender, GameEventArgs e)
     {
-        LoadDataTableSuccessEventArgs ne = (LoadDataTableSuccessEventArgs)e;
-        if (ne.UserData != this)
+        //LoadDataTableSuccessEventArgs ne = (LoadDataTableSuccessEventArgs)e;
+        //if (ne.UserData != this)
+        //{
+        //    return;
+        //}
+        // 获取框架数据表组件
+        DataTableComponent DataTable = GameEntry.GetComponent<DataTableComponent>();
+        // 获得数据表
+        IDataTable<DRHero> dtScene = DataTable.GetDataTable<DRHero>();
+
+        // 获得所有行
+        DRHero[] drHeros = dtScene.GetAllDataRows();
+
+        Log.Debug("drHeros:" + drHeros.Length);
+        // 根据行号获得某一行
+        DRHero drScene = dtScene.GetDataRow(1); // 或直接使用 dtScene[1]
+        if (drScene != null)
         {
-            return;
+            // 此行存在，可以获取内容了
+            string name = drScene.name;
+            int atk = drScene.attack;
+            Log.Debug("name:" + name + ", atk:" + atk);
+        }
+        else
+        {
+            // 此行不存在
         }
 
+        // 获得满足条件的所有行
+        DRHero[] drScenesWithCondition = dtScene.GetDataRows(x => x.Id > 0);
+
+        // 获得满足条件的第一行
+        DRHero drSceneWithCondition = dtScene.GetDataRow(x => x.name == "三笠");
+        Log.Debug(drSceneWithCondition.name);
         Debug.Log("OnLoadDataTableSuccess");
     }
 }
